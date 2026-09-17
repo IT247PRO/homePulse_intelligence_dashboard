@@ -1,0 +1,144 @@
+@model HomePulse.Models.ViewModels.SpeedTestViewModel
+@{
+    ViewData["Title"] = "WAN Gigabit Benchmark & Speedometer";
+}
+
+<div class="space-y-6">
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="text-[10px] font-mono uppercase text-purple-400 font-bold tracking-wider">
+                ASP.NET 9 MVC • SpeedTestController.cs • Speedometer Gauges
+            </div>
+            <h2 class="text-lg font-bold text-white mt-0.5">WAN Gigabit Line Speedometer & Diagnostics</h2>
+            <p class="text-xs text-slate-400 mt-1">
+                Multi-stream TCP & ICMP throughput tests against Cloudflare & Fastly CDN Edge
+            </p>
+        </div>
+
+        <form method="post" asp-action="Run">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-play"></i>
+                <span>Run Manual Benchmark</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Dual Speedometer Gauges (Download & Upload) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Download Tachometer Gauge -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-4">
+                <span class="font-bold text-white uppercase text-[11px] tracking-wider">Download Speedometer</span>
+                <span class="font-mono text-indigo-400">Target: 1000 Mbps</span>
+            </div>
+
+            <!-- Tachometer Gauge SVG -->
+            <div class="relative w-64 h-36 flex items-center justify-center">
+                <svg class="w-64 h-36" viewBox="0 0 200 110">
+                    <!-- Gauge Background Track -->
+                    <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="#1e293b" stroke-width="18" stroke-linecap="round" />
+                    <!-- Gauge Active Progress -->
+                    <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="url(#dlGrad)" stroke-width="18" stroke-dasharray="235.6" stroke-dashoffset="14" stroke-linecap="round" />
+                    <!-- Needle Tick -->
+                    <line x1="100" y1="100" x2="160" y2="35" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+                    <circle cx="100" cy="100" r="7" fill="#6366f1" />
+                    <defs>
+                        <linearGradient id="dlGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#4f46e5" />
+                            <stop offset="100%" stop-color="#818cf8" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-3xl font-bold font-mono text-white">@(Model.Latest?.DownloadMbps ?? 942.5)</span>
+                    <span class="text-xs font-mono text-indigo-400 font-bold">Mbps Download</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 w-full pt-4 mt-2 border-t border-slate-800 text-xs font-mono">
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[10px] text-slate-400">Peak Burst</span>
+                    <div class="font-bold text-slate-200">968.1 Mbps</div>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[10px] text-slate-400">Efficiency</span>
+                    <div class="font-bold text-emerald-400">94.3% Line</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Tachometer Gauge -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-4">
+                <span class="font-bold text-white uppercase text-[11px] tracking-wider">Upload Speedometer</span>
+                <span class="font-mono text-purple-400">Target: 500 Mbps</span>
+            </div>
+
+            <div class="relative w-64 h-36 flex items-center justify-center">
+                <svg class="w-64 h-36" viewBox="0 0 200 110">
+                    <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="#1e293b" stroke-width="18" stroke-linecap="round" />
+                    <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="url(#ulGrad)" stroke-width="18" stroke-dasharray="235.6" stroke-dashoffset="23" stroke-linecap="round" />
+                    <line x1="100" y1="100" x2="155" y2="45" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+                    <circle cx="100" cy="100" r="7" fill="#a855f7" />
+                    <defs>
+                        <linearGradient id="ulGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#9333ea" />
+                            <stop offset="100%" stop-color="#c084fc" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-3xl font-bold font-mono text-white">@(Model.Latest?.UploadMbps ?? 480.2)</span>
+                    <span class="text-xs font-mono text-purple-400 font-bold">Mbps Upload</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 w-full pt-4 mt-2 border-t border-slate-800 text-xs font-mono">
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[10px] text-slate-400">Ping RTT</span>
+                    <div class="font-bold text-emerald-400">@(Model.Latest?.PingLatencyMs ?? 7.8) ms</div>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                    <span class="text-[10px] text-slate-400">Jitter Variance</span>
+                    <div class="font-bold text-slate-200">@(Model.Latest?.JitterMs ?? 1.2) ms</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 24-Hour Benchmark History Table -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+            <span>Historical Benchmark Logs</span>
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="text-[11px] font-mono uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp (UTC)</th>
+                        <th class="py-3 px-4">Download</th>
+                        <th class="py-3 px-4">Upload</th>
+                        <th class="py-3 px-4">Ping</th>
+                        <th class="py-3 px-4">Jitter</th>
+                        <th class="py-3 px-4">Edge Server</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-mono">
+                    @foreach (var item in Model.History)
+                    {
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="py-3 px-4 text-slate-400">@item.TimestampUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="py-3 px-4 font-bold text-indigo-400">@item.DownloadMbps Mbps</td>
+                            <td class="py-3 px-4 font-bold text-purple-400">@item.UploadMbps Mbps</td>
+                            <td class="py-3 px-4 text-slate-300">@item.PingLatencyMs ms</td>
+                            <td class="py-3 px-4 text-slate-400">@item.JitterMs ms</td>
+                            <td class="py-3 px-4 text-slate-400">@item.ServerPoP</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

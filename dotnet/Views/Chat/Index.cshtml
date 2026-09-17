@@ -1,0 +1,198 @@
+@model HomePulse.Models.ViewModels.ChatViewModel
+@{
+    ViewData["Title"] = "Network Intelligence Copilot Chat";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <span>HomePulse Network Intelligence Chat</span>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        SignalR Active
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">
+                    Powered by ASP.NET Core 9 MVC <code class="text-indigo-400 font-mono">ChatController.cs</code> & HomePulse Diagnostic Engine
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Messages Window -->
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col h-[520px] overflow-hidden">
+        <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-4 text-xs">
+            <!-- Initial Welcome Message -->
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="max-w-lg p-4 rounded-2xl rounded-tl-none bg-slate-800/80 border border-slate-700/60 text-slate-200 space-y-2">
+                    <p>Hello! I am your HomePulse Network Sentinel Copilot. I continuously monitor all subnet nodes, WAN throughput, NAS storage arrays, and SSL certificates.</p>
+                    <p class="text-slate-400">Try one of the suggested diagnostic queries below or type any question:</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Suggestions Chips -->
+        <div class="px-6 py-2 bg-slate-950/40 border-t border-slate-800 flex items-center gap-2 overflow-x-auto text-[11px]">
+            <span class="text-slate-400 font-mono shrink-0">Suggestions:</span>
+            @foreach (var prompt in Model.SuggestedPrompts)
+            {
+                <button type="button" onclick="sendSuggestion('@prompt')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap border border-slate-700/60 transition-colors">
+                    @prompt
+                </button>
+            }
+        </div>
+
+        <!-- Input Box Form -->
+        <div class="p-4 bg-slate-950/80 border-t border-slate-800">
+            <form id="chatForm" onsubmit="handleSend(event)" class="flex items-center gap-3">
+                @Html.AntiForgeryToken()
+                <input id="chatInput" type="text" placeholder="Ask about network health, NAS storage, WAN speed, or alerts..." class="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" autocomplete="off" />
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Send</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function sendSuggestion(text) {
+        document.getElementById('chatInput').value = text;
+        document.getElementById('chatForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+
+    async function handleSend(e) {
+        e.preventDefault();
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        input.value = '';
+        appendUserMessage(message);
+
+        // Append typing indicator
+        const typingId = appendTypingIndicator();
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const response = await fetch('/Chat/Ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ message: message })
+            });
+
+            removeTypingIndicator(typingId);
+
+            if (response.ok) {
+                const data = await response.json();
+                appendBotMessage(data.reply, data.embeddedData);
+            } else {
+                appendBotMessage("Network Copilot encountered an error communicating with the backend controller.");
+            }
+        } catch (err) {
+            removeTypingIndicator(typingId);
+            appendBotMessage("Failed to reach ASP.NET Core MVC ChatController. Please check local connectivity.");
+        }
+    }
+
+    function appendUserMessage(msg) {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = 'flex items-start justify-end gap-3';
+        div.innerHTML = `
+            <div class="max-w-lg p-3.5 rounded-2xl rounded-tr-none bg-indigo-600 text-white text-xs shadow-md">
+                ${escapeHtml(msg)}
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/30 text-indigo-300 border border-indigo-400/40 flex items-center justify-center font-bold shrink-0">
+                A
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function appendBotMessage(reply, embeddedData) {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = 'flex items-start gap-3';
+        
+        let extraHtml = '';
+        if (embeddedData && embeddedData.type === 'healthGauge') {
+            extraHtml = `
+                <div class="p-3 mt-2 rounded-xl bg-slate-900 border border-slate-700/60 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full border-4 border-emerald-500 flex items-center justify-center font-mono font-bold text-emerald-400">
+                        ${embeddedData.value}%
+                    </div>
+                    <div>
+                        <div class="font-bold text-white">Subnet Health Index</div>
+                        <div class="text-[11px] text-slate-400 font-mono">${embeddedData.online} / ${embeddedData.total} Nodes Active</div>
+                    </div>
+                </div>
+            `;
+        } else if (embeddedData && embeddedData.type === 'speedGauge') {
+            extraHtml = `
+                <div class="p-3 mt-2 rounded-xl bg-slate-900 border border-slate-700/60 grid grid-cols-2 gap-3 text-center">
+                    <div>
+                        <div class="text-[10px] text-slate-400">Download</div>
+                        <div class="font-mono font-bold text-base text-indigo-400">${embeddedData.download} Mbps</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400">Upload</div>
+                        <div class="font-mono font-bold text-base text-purple-400">${embeddedData.upload} Mbps</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="max-w-lg p-4 rounded-2xl rounded-tl-none bg-slate-800/80 border border-slate-700/60 text-slate-200 space-y-1">
+                <p>${reply}</p>
+                ${extraHtml}
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function appendTypingIndicator() {
+        const id = 'typing-' + Date.now();
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'flex items-center gap-3 text-slate-400 text-xs';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-robot animate-pulse"></i>
+            </div>
+            <span class="italic font-mono">Copilot is querying network telemetry...</span>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return id;
+    }
+
+    function removeTypingIndicator(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+</script>
+}

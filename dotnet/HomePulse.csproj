@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>HomePulse</RootNamespace>
+    <AssemblyName>HomePulse</AssemblyName>
+    <UserSecretsId>homepulse-enterprise-secrets</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Entity Framework Core & Storage -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+
+    <!-- Google Authentication & APIs -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.2" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.68.0.3473" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.68.0.3427" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+
+    <!-- SignalR & Networking -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.2" />
+    <PackageReference Include="Lextm.SharpSnmpLib" Version="12.5.3" />
+
+    <!-- OpenAPI / Swagger -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
+</Project>

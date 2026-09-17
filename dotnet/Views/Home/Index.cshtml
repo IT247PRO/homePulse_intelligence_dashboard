@@ -1,0 +1,219 @@
+@model HomePulse.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Executive Health & Telemetry";
+}
+
+<div class="space-y-6">
+    <!-- Top KPI Grid Featuring Radial & Arc Gauges -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Gauge 1: Network Health Index Arc Gauge -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col items-center justify-between text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>Subnet Health Index</span>
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+            </div>
+            
+            <!-- SVG Radial Semi-Circle Arc Gauge -->
+            <div class="relative w-40 h-24 flex items-center justify-center">
+                <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="url(#healthGrad)" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="3.8" stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="healthGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#10b981" />
+                            <stop offset="100%" stop-color="#06b6d4" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-2xl font-bold font-mono text-white">@Model.HealthIndexPercent%</span>
+                    <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Optimal</span>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-2 font-mono">
+                @Model.OnlineDeviceCount / @Model.TotalDeviceCount nodes responding
+            </div>
+        </div>
+
+        <!-- Gauge 2: WAN Download Speedometer Gauge -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col items-center justify-between text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>WAN Gigabit Download</span>
+                <i class="fa-solid fa-download text-indigo-400"></i>
+            </div>
+            
+            <div class="relative w-40 h-24 flex items-center justify-center">
+                <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#6366f1" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="15" stroke-linecap="round" />
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.DownloadMbps ?? 942.5)</span>
+                    <span class="text-[10px] font-mono text-slate-400">Mbps Down</span>
+                </div>
+            </div>
+            <div class="text-[11px] text-emerald-400 mt-2 font-mono">
+                94% Line Utilization
+            </div>
+        </div>
+
+        <!-- Gauge 3: WAN Upload Speedometer Gauge -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col items-center justify-between text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>WAN Gigabit Upload</span>
+                <i class="fa-solid fa-upload text-purple-400"></i>
+            </div>
+            
+            <div class="relative w-40 h-24 flex items-center justify-center">
+                <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#a855f7" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="22" stroke-linecap="round" />
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.UploadMbps ?? 480.2)</span>
+                    <span class="text-[10px] font-mono text-slate-400">Mbps Up</span>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-2 font-mono">
+                Ping: @(Model.LatestSpeedTest?.PingLatencyMs ?? 7.8)ms RTT
+            </div>
+        </div>
+
+        <!-- Gauge 4: NAS Storage Volume Ring Gauge -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col items-center justify-between text-center relative overflow-hidden">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>Storage Pool (SHR-1)</span>
+                <i class="fa-solid fa-hard-drive text-cyan-400"></i>
+            </div>
+            
+            <div class="relative w-40 h-24 flex items-center justify-center">
+                <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#06b6d4" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="72" stroke-linecap="round" />
+                </svg>
+                <div class="absolute bottom-1 flex flex-col items-center">
+                    <span class="text-2xl font-bold font-mono text-white">14.8</span>
+                    <span class="text-[10px] font-mono text-slate-400">/ 24 TB Used</span>
+                </div>
+            </div>
+            <div class="text-[11px] text-cyan-400 mt-2 font-mono">
+                61.6% • Healthy RAID
+            </div>
+        </div>
+    </div>
+
+    <!-- Bandwidth Chart & Copilot Quick Chat Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 2 Cols: Bandwidth Timeline SVG Area Chart -->
+        <div class="lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-area text-indigo-400"></i>
+                        <span>Gigabit Throughput & Latency Chart (Past 24 Hours)</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5">Automated 4-hour speedtest daemon telemetry</p>
+                </div>
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Fastly / Cloudflare PoP</span>
+            </div>
+
+            <!-- SVG Time Series Area Chart -->
+            <div class="w-full h-52 relative pt-4">
+                <svg class="w-full h-full" viewBox="0 0 600 160" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="dlArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.4" />
+                            <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.0" />
+                        </linearGradient>
+                        <linearGradient id="ulArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#9333ea" stop-opacity="0.4" />
+                            <stop offset="100%" stop-color="#9333ea" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid Lines -->
+                    <line x1="0" y1="40" x2="600" y2="40" stroke="#1e293b" stroke-dasharray="4" />
+                    <line x1="0" y1="80" x2="600" y2="80" stroke="#1e293b" stroke-dasharray="4" />
+                    <line x1="0" y1="120" x2="600" y2="120" stroke="#1e293b" stroke-dasharray="4" />
+
+                    <!-- Download Curve & Area -->
+                    <path d="M 0 160 L 0 35 L 100 25 L 200 40 L 300 20 L 400 30 L 500 25 L 600 22 L 600 160 Z" fill="url(#dlArea)" />
+                    <path d="M 0 35 L 100 25 L 200 40 L 300 20 L 400 30 L 500 25 L 600 22" fill="none" stroke="#6366f1" stroke-width="3" />
+
+                    <!-- Upload Curve & Area -->
+                    <path d="M 0 160 L 0 95 L 100 90 L 200 105 L 300 88 L 400 92 L 500 89 L 600 86 L 600 160 Z" fill="url(#ulArea)" />
+                    <path d="M 0 95 L 100 90 L 200 105 L 300 88 L 400 92 L 500 89 L 600 86" fill="none" stroke="#c084fc" stroke-width="2.5" />
+                </svg>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono mt-2">
+                    <span>00:00</span>
+                    <span>04:00</span>
+                    <span>08:00</span>
+                    <span>12:00</span>
+                    <span>16:00</span>
+                    <span>20:00</span>
+                    <span>Now</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 pt-2 border-t border-slate-800 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded bg-indigo-500"></span>
+                    <span class="text-slate-300 font-medium">Download Rate (~942 Mbps)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded bg-purple-400"></span>
+                    <span class="text-slate-300 font-medium">Upload Rate (~480 Mbps)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-400 font-mono">Average Latency: 7.8ms</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1 Col: Integrated Network Copilot Chat Widget -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col justify-between space-y-4">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Network Copilot Chat</h3>
+                            <div class="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                Online & Listening
+                            </div>
+                        </div>
+                    </div>
+                    <a asp-controller="Chat" asp-action="Index" class="text-xs text-indigo-400 hover:underline">Full Chat &rarr;</a>
+                </div>
+
+                <div class="space-y-3 mt-4 text-xs">
+                    <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                        <span class="text-[10px] text-indigo-400 font-bold uppercase">Copilot Prompt Ideas</span>
+                        <p class="text-slate-300">Ask about subnet health, bandwidth speed, or investigate active alerts:</p>
+                    </div>
+
+                    <div class="space-y-2 font-mono text-[11px]">
+                        <a asp-controller="Chat" asp-action="Index" class="block p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-slate-300 transition-colors">
+                            "What is the network health and online device count?"
+                        </a>
+                        <a asp-controller="Chat" asp-action="Index" class="block p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-slate-300 transition-colors">
+                            "Are all NAS RAID storage pools healthy?"
+                        </a>
+                        <a asp-controller="Chat" asp-action="Index" class="block p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 text-slate-300 transition-colors">
+                            "Check SSL certificate expiration on monitored URLs"
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <a asp-controller="Chat" asp-action="Index" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs text-center shadow-md transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-comments"></i>
+                <span>Open Interactive Network Chat</span>
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+services:
+  homepulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homepulse-sentinel
+    restart: unless-stopped
+    # Use host network mode so ARP scanner and ping sweeps inspect the physical LAN
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - homepulse-data:/app/data
+      - /proc/net/arp:/proc/net/arp:ro
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/homepulse.db
+      - Authentication__Google__ClientId=YOUR_GOOGLE_CLIENT_ID
+      - Authentication__Google__ClientSecret=YOUR_GOOGLE_CLIENT_SECRET
+      - Security__AllowedGoogleEmails__0=azhar.cs@gmail.com
+      - Alerting__DiscordWebhookUrl=
+      - Alerting__NtfyTopic=homepulse-network-alerts
+    ports:
+      - "5000:5000"
+
+volumes:
+  homepulse-data:

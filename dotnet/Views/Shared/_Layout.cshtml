@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - HomePulse Enterprise Network Sentinel (ASP.NET Core 9 MVC)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#4f46e5'
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased">
+    <!-- Top MVC Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-base tracking-tight flex items-center gap-2">
+                            HomePulse
+                            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                                ASP.NET 9 MVC
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-slate-400">Enterprise Home Sentinel</div>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-1 text-xs font-medium text-slate-300">
+                    <a asp-controller="Home" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-gauge-high mr-1.5 text-indigo-400"></i>Dashboard
+                    </a>
+                    <a asp-controller="Devices" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-network-wired mr-1.5 text-cyan-400"></i>Devices
+                    </a>
+                    <a asp-controller="Storage" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-hard-drive mr-1.5 text-amber-400"></i>Storage & NAS
+                    </a>
+                    <a asp-controller="Services" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-globe mr-1.5 text-emerald-400"></i>Web & SSL
+                    </a>
+                    <a asp-controller="SpeedTest" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-tachograph-digital mr-1.5 text-purple-400"></i>Speed Test
+                    </a>
+                    <a asp-controller="Alerts" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-bell mr-1.5 text-rose-400"></i>Alerts
+                    </a>
+                    <a asp-controller="Chat" asp-action="Index" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 transition-colors">
+                        <i class="fa-solid fa-comment-dots mr-1.5 text-indigo-400"></i>Copilot Chat
+                    </a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-slate-400">SignalR:</span>
+                    <span class="text-emerald-400">Connected</span>
+                </div>
+
+                <div class="flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
+                    <div class="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center justify-center font-bold">
+                        A
+                    </div>
+                    <span class="hidden lg:inline text-slate-300 font-mono">azhar.cs@gmail.com</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Razor Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        @RenderBody()
+    </main>
+
+    <footer class="border-t border-slate-800 bg-slate-900/50 py-4 text-center text-xs text-slate-500 font-mono">
+        HomePulse Intelligence Dashboard &copy; @DateTime.UtcNow.Year • Built with ASP.NET Core 9.0 MVC, SignalR, and Razor Tag Helpers.
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

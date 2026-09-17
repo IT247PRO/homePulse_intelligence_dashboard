@@ -1,0 +1,56 @@
+@model HomePulse.Models.ViewModels.AlertsViewModel
+@{
+    ViewData["Title"] = "Multi-Channel Alerting & Incident Sentinel";
+}
+
+<div class="space-y-6">
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="text-[10px] font-mono uppercase text-rose-400 font-bold tracking-wider">
+                ASP.NET 9 MVC • AlertsController.cs • Razor Index.cshtml
+            </div>
+            <h2 class="text-lg font-bold text-white mt-0.5">Multi-Channel Alerting & Incident Dispatcher</h2>
+            <p class="text-xs text-slate-400 mt-1">
+                Real-time dispatch to Discord Rich Embeds, Telegram Bot API, and ntfy.sh mobile push
+            </p>
+        </div>
+
+        <form method="post" asp-action="DispatchTestAlert">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span>Trigger Manual Test Alert</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="space-y-3">
+        @foreach (var alert in Model.Alerts)
+        {
+            <div class="p-5 rounded-2xl bg-slate-900 border @(alert.IsResolved ? "border-slate-800 opacity-60" : alert.Severity == AlertSeverity.Critical ? "border-rose-800/80 bg-rose-950/10" : "border-amber-800/80 bg-amber-950/10") shadow-md flex items-start justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase @(alert.Severity == AlertSeverity.Critical ? "bg-rose-900/60 text-rose-300" : "bg-amber-900/60 text-amber-300")">
+                            @alert.Severity
+                        </span>
+                        <h4 class="text-sm font-bold text-white">@alert.Title</h4>
+                        <span class="text-[11px] text-slate-400 font-mono">@alert.TimestampUtc.ToString("yyyy-MM-dd HH:mm") UTC</span>
+                    </div>
+                    <p class="text-xs text-slate-300">@alert.Message</p>
+                    <div class="text-[11px] font-mono text-slate-400">
+                        Dispatched via: <span class="text-indigo-300">SignalR UI, Discord Embed, ntfy.sh</span>
+                    </div>
+                </div>
+
+                <form method="post" asp-action="ToggleResolve">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@alert.Id" />
+                    <button type="submit" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors @(alert.IsResolved ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-white")">
+                        @(alert.IsResolved ? "Reopen Incident" : "Resolve Incident")
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

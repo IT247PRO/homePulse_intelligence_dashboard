@@ -1,0 +1,61 @@
+@model HomePulse.Models.ViewModels.ServiceHealthViewModel
+@{
+    ViewData["Title"] = "Websites & SSL Sentinel Monitor";
+}
+
+<div class="space-y-6">
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="text-[10px] font-mono uppercase text-emerald-400 font-bold tracking-wider">
+                ASP.NET 9 MVC • ServicesController.cs • Razor Index.cshtml
+            </div>
+            <h2 class="text-lg font-bold text-white mt-0.5">HTTP/HTTPS Endpoints & SSL Certificate Sentinel</h2>
+            <p class="text-xs text-slate-400 mt-1">
+                Continuous synthetic probes every 60s testing HTTP status codes, TLS 1.3 handshake, and SSL certificate expiration.
+            </p>
+        </div>
+    </div>
+
+    <!-- Monitored Services Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach (var s in Model.Services)
+        {
+            var isSslWarning = s.SslDaysRemaining.HasValue && s.SslDaysRemaining < 14;
+            <div class="p-5 rounded-2xl bg-slate-900 border @(isSslWarning ? "border-amber-800/80 bg-amber-950/10" : "border-slate-800") shadow-md space-y-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <span>@s.Name</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded @(s.IsOnline ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : "bg-rose-950 text-rose-300 border border-rose-800")">
+                                @(s.LastStatusCode?.ToString() ?? "200")
+                            </span>
+                        </div>
+                        <a href="@s.Url" target="_blank" class="text-[11px] font-mono text-slate-400 hover:text-indigo-400 truncate block max-w-[200px] mt-0.5">
+                            @s.Url
+                        </a>
+                    </div>
+
+                    <div class="text-right font-mono">
+                        <span class="text-xs font-bold text-white">@s.ResponseTimeMs ms</span>
+                        <div class="text-[10px] text-slate-500">RTT</div>
+                    </div>
+                </div>
+
+                <!-- SSL Expiration Arc / Badge -->
+                <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+                    <span class="text-slate-400">SSL Expiration:</span>
+                    @if (s.SslDaysRemaining.HasValue)
+                    {
+                        <span class="px-2 py-0.5 rounded @(isSslWarning ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40" : "text-emerald-400")">
+                            @s.SslDaysRemaining days remaining
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-slate-500">N/A (HTTP)</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

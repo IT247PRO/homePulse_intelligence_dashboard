@@ -1,0 +1,6 @@
+{
+  "name": "HomePulse Intelligence Dashboard",
+  "description": "Enterprise Home Intelligence & Network Monitoring Dashboard with device discovery, health monitoring, service status, productivity integrations, and automated alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
