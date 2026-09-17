@@ -47,21 +47,11 @@ public class AlertsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DispatchTestAlert(CancellationToken ct)
     {
-        var testAlert = new SystemAlert
-        {
-            Id = Guid.NewGuid(),
-            Title = "Manual Test: Wi-Fi Rogue Client Association",
-            Message = "Unrecognized hardware MAC DC:A6:32:99:FF:01 associated with SSID 'IoT_Isolated'.",
-            Severity = AlertSeverity.Warning,
-            Source = "Manual MVC Trigger",
-            TimestampUtc = DateTime.UtcNow,
-            IsResolved = false,
-            DispatchedWebhooksJson = "[\"SignalR_UI\", \"Discord\", \"ntfy.sh\"]"
-        };
-
-        _dbContext.Alerts.Add(testAlert);
-        await _dbContext.SaveChangesAsync(ct);
-        await _alertService.DispatchAlertAsync(testAlert, ct);
+        await _alertService.DispatchAlertAsync(
+            "Manual Test: Wi-Fi Rogue Client Association",
+            "Unrecognized hardware MAC DC:A6:32:99:FF:01 associated with SSID 'IoT_Isolated'.",
+            AlertSeverity.Warning,
+            "Manual MVC Trigger");
 
         return RedirectToAction(nameof(Index));
     }

@@ -22,7 +22,7 @@ public class SpeedTestController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var history = await _dbContext.SpeedTests.AsNoTracking().OrderByDescending(s => s.TimestampUtc).Take(15).ToListAsync(ct);
+        var history = await _dbContext.SpeedTestRecords.AsNoTracking().OrderByDescending(s => s.TimestampUtc).Take(15).ToListAsync(ct);
         var latest = history.FirstOrDefault() ?? await _speedTestService.GetLatestResultAsync(ct);
 
         var model = new SpeedTestViewModel
@@ -37,7 +37,7 @@ public class SpeedTestController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Run(CancellationToken ct)
     {
-        var result = await _speedTestService.ExecuteSpeedTestAsync(ct);
+        var result = await _speedTestService.RunBenchmarkAsync(ct);
         return RedirectToAction(nameof(Index));
     }
 }

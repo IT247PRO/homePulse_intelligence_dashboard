@@ -10,6 +10,7 @@ namespace HomePulse.Services;
 public interface ISpeedTestService
 {
     Task<SpeedTestRecord> RunBenchmarkAsync(CancellationToken ct = default);
+    Task<SpeedTestRecord?> GetLatestResultAsync(CancellationToken ct = default);
 }
 
 public class SpeedTestService : BackgroundService, ISpeedTestService
@@ -60,6 +61,16 @@ public class SpeedTestService : BackgroundService, ISpeedTestService
                 await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
             }
         }
+    }
+
+    public async Task<SpeedTestRecord?> GetLatestResultAsync(CancellationToken ct = default)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HomePulseDbContext>();
+        return await db.SpeedTestRecords
+            .AsNoTracking()
+            .OrderByDescending(r => r.TimestampUtc)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<SpeedTestRecord> RunBenchmarkAsync(CancellationToken ct = default)

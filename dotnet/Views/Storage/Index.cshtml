@@ -34,7 +34,7 @@
                                 @node.NasType
                             </span>
                         </div>
-                        <div class="text-xs text-slate-400 font-mono mt-0.5">@node.IpAddress • Pool: @node.PoolName</div>
+                        <div class="text-xs text-slate-400 font-mono mt-0.5">@node.HostIp</div>
                     </div>
                     <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
                         @node.RaidStatus
@@ -62,9 +62,9 @@
                         <div class="relative w-16 h-16 flex items-center justify-center">
                             <svg class="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
                                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1e293b" stroke-width="3.8" />
-                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3.8" stroke-dasharray="@node.CpuPercent, 100" />
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3.8" stroke-dasharray="@node.CpuUsagePercent, 100" />
                             </svg>
-                            <span class="absolute font-mono font-bold text-xs text-white">@node.CpuPercent%</span>
+                            <span class="absolute font-mono font-bold text-xs text-white">@node.CpuUsagePercent%</span>
                         </div>
                         <span class="text-[10px] text-emerald-400 font-mono mt-1.5">Intel Celeron</span>
                     </div>
@@ -75,9 +75,9 @@
                         <div class="relative w-16 h-16 flex items-center justify-center">
                             <svg class="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
                                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1e293b" stroke-width="3.8" />
-                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#8b5cf6" stroke-width="3.8" stroke-dasharray="@node.MemoryPercent, 100" />
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#8b5cf6" stroke-width="3.8" stroke-dasharray="@node.RamUsagePercent, 100" />
                             </svg>
-                            <span class="absolute font-mono font-bold text-xs text-white">@node.MemoryPercent%</span>
+                            <span class="absolute font-mono font-bold text-xs text-white">@node.RamUsagePercent%</span>
                         </div>
                         <span class="text-[10px] text-purple-400 font-mono mt-1.5">DDR4 Non-ECC</span>
                     </div>

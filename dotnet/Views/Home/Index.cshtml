@@ -1,6 +1,48 @@
 @model HomePulse.Models.ViewModels.DashboardViewModel
+@using HomePulse.Models
 @{
     ViewData["Title"] = "Executive Health & Telemetry";
+
+    const double arcLength = 188.5;
+    static string ArcOffset(double percent)
+    {
+        percent = Math.Clamp(percent, 0, 100);
+        return Math.Round(arcLength * (1 - percent / 100), 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    double downloadPct = Math.Min(100, (Model.LatestSpeedTest?.DownloadMbps ?? 0) / 1000.0 * 100);
+    double uploadPct = Math.Min(100, (Model.LatestSpeedTest?.UploadMbps ?? 0) / 500.0 * 100);
+
+    double totalUsedTb = Model.NasNodes.Sum(n => n.DiskUsedBytes) / 1e12;
+    double totalAllocatedTb = Model.NasNodes.Sum(n => n.DiskTotalBytes) / 1e12;
+    double storagePct = totalAllocatedTb > 0 ? (totalUsedTb / totalAllocatedTb * 100) : 0;
+    bool allNasHealthy = Model.NasNodes.All(n => n.RaidStatus.Contains("Healthy", StringComparison.OrdinalIgnoreCase));
+
+    var history = Model.SpeedTestHistory;
+    double maxMbps = history.Count > 0 ? Math.Max(history.Max(h => h.DownloadMbps), history.Max(h => h.UploadMbps)) : 1;
+    if (maxMbps <= 0) maxMbps = 1;
+
+    string BuildPath(Func<SpeedTestRecord, double> selector)
+    {
+        if (history.Count == 0) return string.Empty;
+        if (history.Count == 1)
+        {
+            double y = 150 - (selector(history[0]) / maxMbps * 130);
+            return $"M 0 {y:F1} L 600 {y:F1}";
+        }
+        var points = history.Select((h, i) =>
+        {
+            double x = i * (600.0 / (history.Count - 1));
+            double y = 150 - (selector(h) / maxMbps * 130);
+            return $"{x:F1} {y:F1}";
+        }).ToList();
+        return "M " + string.Join(" L ", points);
+    }
+
+    string downloadLine = BuildPath(h => h.DownloadMbps);
+    string uploadLine = BuildPath(h => h.UploadMbps);
+    string downloadArea = history.Count > 0 ? $"M 0 160 L {downloadLine[2..]} L 600 160 Z" : string.Empty;
+    string uploadArea = history.Count > 0 ? $"M 0 160 L {uploadLine[2..]} L 600 160 Z" : string.Empty;
 }
 
 <div class="space-y-6">
@@ -12,12 +54,11 @@
                 <span>Subnet Health Index</span>
                 <i class="fa-solid fa-shield-halved text-emerald-400"></i>
             </div>
-            
-            <!-- SVG Radial Semi-Circle Arc Gauge -->
+
             <div class="relative w-40 h-24 flex items-center justify-center">
                 <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
                     <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
-                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="url(#healthGrad)" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="3.8" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="url(#healthGrad)" stroke-width="14" stroke-dasharray="@arcLength" stroke-dashoffset="@ArcOffset(Model.HealthIndexPercent)" stroke-linecap="round" />
                     <defs>
                         <linearGradient id="healthGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stop-color="#10b981" />
@@ -27,7 +68,7 @@
                 </svg>
                 <div class="absolute bottom-1 flex flex-col items-center">
                     <span class="text-2xl font-bold font-mono text-white">@Model.HealthIndexPercent%</span>
-                    <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Optimal</span>
+                    <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">@(Model.HealthIndexPercent >= 90 ? "Optimal" : Model.HealthIndexPercent >= 60 ? "Degraded" : "Critical")</span>
                 </div>
             </div>
             <div class="text-[11px] text-slate-400 mt-2 font-mono">
@@ -41,19 +82,19 @@
                 <span>WAN Gigabit Download</span>
                 <i class="fa-solid fa-download text-indigo-400"></i>
             </div>
-            
+
             <div class="relative w-40 h-24 flex items-center justify-center">
                 <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
                     <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
-                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#6366f1" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="15" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#6366f1" stroke-width="14" stroke-dasharray="@arcLength" stroke-dashoffset="@ArcOffset(downloadPct)" stroke-linecap="round" />
                 </svg>
                 <div class="absolute bottom-1 flex flex-col items-center">
-                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.DownloadMbps ?? 942.5)</span>
+                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.DownloadMbps.ToString("0.0") ?? "—")</span>
                     <span class="text-[10px] font-mono text-slate-400">Mbps Down</span>
                 </div>
             </div>
-            <div class="text-[11px] text-emerald-400 mt-2 font-mono">
-                94% Line Utilization
+            <div class="text-[11px] text-slate-400 mt-2 font-mono">
+                @(Model.LatestSpeedTest != null ? $"Tested {Model.LatestSpeedTest.TimestampUtc:MMM d, HH:mm} UTC" : "No speed test run yet")
             </div>
         </div>
 
@@ -63,42 +104,111 @@
                 <span>WAN Gigabit Upload</span>
                 <i class="fa-solid fa-upload text-purple-400"></i>
             </div>
-            
+
             <div class="relative w-40 h-24 flex items-center justify-center">
                 <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
                     <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
-                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#a855f7" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="22" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#a855f7" stroke-width="14" stroke-dasharray="@arcLength" stroke-dashoffset="@ArcOffset(uploadPct)" stroke-linecap="round" />
                 </svg>
                 <div class="absolute bottom-1 flex flex-col items-center">
-                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.UploadMbps ?? 480.2)</span>
+                    <span class="text-2xl font-bold font-mono text-white">@(Model.LatestSpeedTest?.UploadMbps.ToString("0.0") ?? "—")</span>
                     <span class="text-[10px] font-mono text-slate-400">Mbps Up</span>
                 </div>
             </div>
             <div class="text-[11px] text-slate-400 mt-2 font-mono">
-                Ping: @(Model.LatestSpeedTest?.PingLatencyMs ?? 7.8)ms RTT
+                Ping: @(Model.LatestSpeedTest?.PingLatencyMs.ToString("0.0") ?? "—")ms RTT
             </div>
         </div>
 
         <!-- Gauge 4: NAS Storage Volume Ring Gauge -->
         <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col items-center justify-between text-center relative overflow-hidden">
             <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span>Storage Pool (SHR-1)</span>
+                <span>Storage Pool</span>
                 <i class="fa-solid fa-hard-drive text-cyan-400"></i>
             </div>
-            
+
             <div class="relative w-40 h-24 flex items-center justify-center">
                 <svg class="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
                     <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round" />
-                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#06b6d4" stroke-width="14" stroke-dasharray="188.5" stroke-dashoffset="72" stroke-linecap="round" />
+                    <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#06b6d4" stroke-width="14" stroke-dasharray="@arcLength" stroke-dashoffset="@ArcOffset(storagePct)" stroke-linecap="round" />
                 </svg>
                 <div class="absolute bottom-1 flex flex-col items-center">
-                    <span class="text-2xl font-bold font-mono text-white">14.8</span>
-                    <span class="text-[10px] font-mono text-slate-400">/ 24 TB Used</span>
+                    <span class="text-2xl font-bold font-mono text-white">@totalUsedTb.ToString("0.0")</span>
+                    <span class="text-[10px] font-mono text-slate-400">/ @totalAllocatedTb.ToString("0.0") TB Used</span>
                 </div>
             </div>
-            <div class="text-[11px] text-cyan-400 mt-2 font-mono">
-                61.6% • Healthy RAID
+            <div class="text-[11px] @(allNasHealthy ? "text-cyan-400" : "text-rose-400") mt-2 font-mono">
+                @(Model.NasNodes.Count == 0 ? "No NAS nodes configured" : $"{storagePct:0.0}% • {(allNasHealthy ? "Healthy RAID" : "Degraded RAID")}")
             </div>
+        </div>
+    </div>
+
+    <!-- Online Devices & Website Monitor Widgets -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Online Devices Widget -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-network-wired text-cyan-400"></i>
+                    <span>Online Devices</span>
+                    <span class="text-[10px] font-mono font-normal px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                        @Model.OnlineDeviceCount / @Model.TotalDeviceCount
+                    </span>
+                </h3>
+                <a asp-controller="Devices" asp-action="Index" class="text-xs text-indigo-400 hover:underline">View All &rarr;</a>
+            </div>
+            @if (Model.CriticalDevices.Count == 0)
+            {
+                <p class="text-xs text-slate-500">No devices discovered yet.</p>
+            }
+            else
+            {
+                <div class="space-y-1.5">
+                    @foreach (var device in Model.CriticalDevices)
+                    {
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-xs">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-2 h-2 rounded-full shrink-0 @(device.IsOnline ? "bg-emerald-500" : "bg-rose-500")"></span>
+                                <span class="text-white font-medium truncate">@device.CustomAlias</span>
+                            </div>
+                            <span class="font-mono text-slate-400 shrink-0 ml-2">@(device.IsOnline ? $"{device.PingLatencyMs}ms" : device.IpAddress)</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Website & SSL Monitor Widget -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-globe text-emerald-400"></i>
+                    <span>Website & SSL Monitor</span>
+                </h3>
+                <a asp-controller="Services" asp-action="Index" class="text-xs text-indigo-400 hover:underline">Manage &rarr;</a>
+            </div>
+            @if (Model.MonitoredServices.Count == 0)
+            {
+                <p class="text-xs text-slate-500">No websites monitored yet.</p>
+            }
+            else
+            {
+                <div class="space-y-1.5">
+                    @foreach (var svc in Model.MonitoredServices)
+                    {
+                        var sslWarn = svc.SslDaysRemaining.HasValue && svc.SslDaysRemaining < 14;
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-xs">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-2 h-2 rounded-full shrink-0 @(svc.IsOnline ? "bg-emerald-500" : "bg-rose-500")"></span>
+                                <span class="text-white font-medium truncate">@svc.Name</span>
+                            </div>
+                            <span class="font-mono shrink-0 ml-2 @(sslWarn ? "text-amber-400" : "text-slate-400")">
+                                @(sslWarn ? $"SSL {svc.SslDaysRemaining}d" : $"{svc.LastStatusCode}")
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -110,65 +220,62 @@
                 <div>
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-chart-area text-indigo-400"></i>
-                        <span>Gigabit Throughput & Latency Chart (Past 24 Hours)</span>
+                        <span>Gigabit Throughput & Latency Chart</span>
                     </h3>
-                    <p class="text-xs text-slate-400 font-mono mt-0.5">Automated 4-hour speedtest daemon telemetry</p>
-                </div>
-                <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Fastly / Cloudflare PoP</span>
-            </div>
-
-            <!-- SVG Time Series Area Chart -->
-            <div class="w-full h-52 relative pt-4">
-                <svg class="w-full h-full" viewBox="0 0 600 160" preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id="dlArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.4" />
-                            <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.0" />
-                        </linearGradient>
-                        <linearGradient id="ulArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#9333ea" stop-opacity="0.4" />
-                            <stop offset="100%" stop-color="#9333ea" stop-opacity="0.0" />
-                        </linearGradient>
-                    </defs>
-                    <!-- Grid Lines -->
-                    <line x1="0" y1="40" x2="600" y2="40" stroke="#1e293b" stroke-dasharray="4" />
-                    <line x1="0" y1="80" x2="600" y2="80" stroke="#1e293b" stroke-dasharray="4" />
-                    <line x1="0" y1="120" x2="600" y2="120" stroke="#1e293b" stroke-dasharray="4" />
-
-                    <!-- Download Curve & Area -->
-                    <path d="M 0 160 L 0 35 L 100 25 L 200 40 L 300 20 L 400 30 L 500 25 L 600 22 L 600 160 Z" fill="url(#dlArea)" />
-                    <path d="M 0 35 L 100 25 L 200 40 L 300 20 L 400 30 L 500 25 L 600 22" fill="none" stroke="#6366f1" stroke-width="3" />
-
-                    <!-- Upload Curve & Area -->
-                    <path d="M 0 160 L 0 95 L 100 90 L 200 105 L 300 88 L 400 92 L 500 89 L 600 86 L 600 160 Z" fill="url(#ulArea)" />
-                    <path d="M 0 95 L 100 90 L 200 105 L 300 88 L 400 92 L 500 89 L 600 86" fill="none" stroke="#c084fc" stroke-width="2.5" />
-                </svg>
-
-                <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono mt-2">
-                    <span>00:00</span>
-                    <span>04:00</span>
-                    <span>08:00</span>
-                    <span>12:00</span>
-                    <span>16:00</span>
-                    <span>20:00</span>
-                    <span>Now</span>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5">Last @history.Count automated speedtest runs</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-6 pt-2 border-t border-slate-800 text-xs">
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded bg-indigo-500"></span>
-                    <span class="text-slate-300 font-medium">Download Rate (~942 Mbps)</span>
+            @if (history.Count > 0)
+            {
+                <div class="w-full h-52 relative pt-4">
+                    <svg class="w-full h-full" viewBox="0 0 600 160" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="dlArea" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.0" />
+                            </linearGradient>
+                            <linearGradient id="ulArea" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#9333ea" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#9333ea" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <line x1="0" y1="40" x2="600" y2="40" stroke="#1e293b" stroke-dasharray="4" />
+                        <line x1="0" y1="80" x2="600" y2="80" stroke="#1e293b" stroke-dasharray="4" />
+                        <line x1="0" y1="120" x2="600" y2="120" stroke="#1e293b" stroke-dasharray="4" />
+
+                        <path d="@downloadArea" fill="url(#dlArea)" />
+                        <path d="@downloadLine" fill="none" stroke="#6366f1" stroke-width="3" />
+
+                        <path d="@uploadArea" fill="url(#ulArea)" />
+                        <path d="@uploadLine" fill="none" stroke="#c084fc" stroke-width="2.5" />
+                    </svg>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono mt-2">
+                        <span>@history.First().TimestampUtc.ToString("HH:mm")</span>
+                        <span>@history[history.Count / 2].TimestampUtc.ToString("MMM d HH:mm")</span>
+                        <span>Now</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded bg-purple-400"></span>
-                    <span class="text-slate-300 font-medium">Upload Rate (~480 Mbps)</span>
+
+                <div class="flex items-center gap-6 pt-2 border-t border-slate-800 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded bg-indigo-500"></span>
+                        <span class="text-slate-300 font-medium">Download Rate</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded bg-purple-400"></span>
+                        <span class="text-slate-300 font-medium">Upload Rate</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span class="text-slate-400 font-mono">Average Latency: 7.8ms</span>
+            }
+            else
+            {
+                <div class="h-52 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                    <i class="fa-solid fa-chart-area text-2xl"></i>
+                    <span>No speed test history yet. Run one from the Speed Test page.</span>
                 </div>
-            </div>
+            }
         </div>
 
         <!-- 1 Col: Integrated Network Copilot Chat Widget -->
@@ -216,4 +323,158 @@
             </a>
         </div>
     </div>
+
+    <!-- Smart Home Row: Ecobee & Blink -->
+    @if (Model.EcobeeConnected || Model.BlinkConnected)
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @if (Model.EcobeeConnected)
+            {
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-temperature-half text-emerald-400"></i>
+                        <span>Ecobee Thermostat</span>
+                    </h3>
+                    @if (Model.Thermostats.Count == 0)
+                    {
+                        <p class="text-xs text-slate-500">No thermostat data available.</p>
+                    }
+                    else
+                    {
+                        @foreach (var t in Model.Thermostats)
+                        {
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 text-xs">
+                                <div>
+                                    <div class="text-white font-medium">@t.Name</div>
+                                    <div class="text-[11px] text-slate-400 font-mono mt-0.5">@t.HvacMode &middot; @t.HumidityPercent% humidity</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold font-mono text-emerald-300">@t.ActualTemperatureF.ToString("0.0")&deg;F</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">@t.DesiredHeatF.ToString("0")&deg;-@t.DesiredCoolF.ToString("0")&deg; target</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            @if (Model.BlinkConnected)
+            {
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-video text-cyan-400"></i>
+                        <span>Blink Cameras</span>
+                    </h3>
+                    @if (Model.BlinkCameras.Count == 0)
+                    {
+                        <p class="text-xs text-slate-500">No camera data available yet.</p>
+                    }
+                    else
+                    {
+                        <div class="space-y-1.5">
+                            @foreach (var cam in Model.BlinkCameras)
+                            {
+                                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-xs">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="w-2 h-2 rounded-full shrink-0 @(cam.IsOnline ? "bg-emerald-500" : "bg-rose-500")"></span>
+                                        <span class="text-white font-medium truncate">@cam.Name</span>
+                                        @if (!cam.IsArmed)
+                                        {
+                                            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">Disarmed</span>
+                                        }
+                                    </div>
+                                    <span class="font-mono text-slate-400 shrink-0 ml-2">@(cam.BatteryPercent.HasValue ? $"{cam.BatteryPercent}%" : "")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Google Workspace Row: Calendar & Gmail -->
+    @if (!Model.GoogleAccountLinked)
+    {
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-brands fa-google text-2xl text-slate-400"></i>
+                <div>
+                    <div class="text-sm font-bold text-white">Google Calendar & Gmail widgets are hidden</div>
+                    <p class="text-xs text-slate-400 mt-0.5">Sign in again to grant Calendar and Gmail read access, or your access token expired.</p>
+                </div>
+            </div>
+            <a href="/api/auth/login" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-colors">
+                Connect Google Account
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Today's Calendar Widget -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-rose-400"></i>
+                    <span>Today's Calendar</span>
+                </h3>
+                @if (Model.CalendarEvents.Count == 0)
+                {
+                    <p class="text-xs text-slate-500">No events scheduled for today.</p>
+                }
+                else
+                {
+                    <div class="space-y-2">
+                        @foreach (var ev in Model.CalendarEvents)
+                        {
+                            <a href="@(ev.HtmlLink ?? "#")" target="_blank" class="block p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-colors">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-white truncate">@ev.Summary</span>
+                                    <span class="text-[10px] font-mono text-slate-400 shrink-0 ml-2">
+                                        @(ev.IsAllDay ? "All day" : ev.StartTime.ToLocalTime().ToString("HH:mm"))
+                                    </span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(ev.Location))
+                                {
+                                    <div class="text-[11px] text-slate-400 mt-1 truncate"><i class="fa-solid fa-location-dot mr-1"></i>@ev.Location</div>
+                                }
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Gmail Highlights Widget -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-envelope text-amber-400"></i>
+                    <span>Gmail Highlights</span>
+                    @if (Model.MailHighlights is { UnreadPrimaryCount: > 0 })
+                    {
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
+                            @Model.MailHighlights.UnreadPrimaryCount unread
+                        </span>
+                    }
+                </h3>
+                @if (Model.MailHighlights == null || Model.MailHighlights.RecentImportantMessages.Count == 0)
+                {
+                    <p class="text-xs text-slate-500">No unread primary inbox messages.</p>
+                }
+                else
+                {
+                    <div class="space-y-2">
+                        @foreach (var mail in Model.MailHighlights.RecentImportantMessages)
+                        {
+                            <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-white truncate max-w-[220px]">@mail.Subject</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-1 truncate">@mail.From</div>
+                                <div class="text-[11px] text-slate-500 mt-1 truncate">@mail.Snippet</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>

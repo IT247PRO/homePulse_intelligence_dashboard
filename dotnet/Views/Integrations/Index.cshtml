@@ -1,0 +1,140 @@
+@model HomePulse.Models.ViewModels.IntegrationsViewModel
+@{
+    ViewData["Title"] = "Smart Home Integrations";
+    var ecobeePin = TempData["EcobeePin"] as string;
+    var ecobeeMessage = TempData["EcobeeMessage"] as string;
+    var blinkMessage = TempData["BlinkMessage"] as string;
+    var blinkNeedsPin = TempData["BlinkNeedsPin"] is true;
+}
+
+<div class="space-y-6 max-w-3xl">
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <h2 class="text-lg font-bold text-white">Smart Home Integrations</h2>
+        <p class="text-xs text-slate-400 mt-1">Connect Ecobee and Blink to surface live status on your dashboard.</p>
+    </div>
+
+    <!-- Ecobee Card -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-temperature-half text-emerald-400"></i>
+                <span>Ecobee Thermostat</span>
+            </h3>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full @(Model.EcobeeConnected ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : "bg-slate-800 text-slate-400 border border-slate-700")">
+                @(Model.EcobeeConnected ? "Connected" : "Not connected")
+            </span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ecobeeMessage))
+        {
+            <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300">@ecobeeMessage</div>
+        }
+
+        @if (Model.EcobeeConnected)
+        {
+            <form method="post" asp-action="EcobeeDisconnect">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-semibold text-xs transition-colors">
+                    Disconnect Ecobee
+                </button>
+            </form>
+        }
+        else if (!string.IsNullOrWhiteSpace(ecobeePin))
+        {
+            <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 space-y-3">
+                <div class="text-center">
+                    <div class="text-[10px] text-slate-400 font-mono uppercase">Your PIN</div>
+                    <div class="text-3xl font-bold font-mono text-emerald-300 tracking-widest mt-1">@ecobeePin</div>
+                </div>
+                <ol class="text-xs text-slate-300 space-y-1 list-decimal list-inside">
+                    <li>Go to <a href="https://www.ecobee.com/consumerportal/index.html" target="_blank" class="text-indigo-400 hover:underline">ecobee.com/consumerportal</a> and sign in</li>
+                    <li>Open <strong>My Apps</strong> &rarr; <strong>Add Application</strong></li>
+                    <li>Enter the PIN above and confirm</li>
+                    <li>Come back here and click "Finish Connecting"</li>
+                </ol>
+                <form method="post" asp-action="EcobeeComplete">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-full px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors">
+                        Finish Connecting
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-action="EcobeeConnect">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors">
+                    Connect Ecobee
+                </button>
+            </form>
+            <p class="text-[11px] text-slate-500">
+                Requires a free API key from <a href="https://www.ecobee.com/en-us/developers/" target="_blank" class="text-indigo-400 hover:underline">ecobee.com/developers</a>, added to <code class="text-slate-400">Ecobee:ApiKey</code> in appsettings.json.
+            </p>
+        }
+    </div>
+
+    <!-- Blink Card -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-video text-cyan-400"></i>
+                <span>Blink Cameras</span>
+            </h3>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full @(Model.BlinkConnected ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : "bg-slate-800 text-slate-400 border border-slate-700")">
+                @(Model.BlinkConnected ? "Connected" : "Not connected")
+            </span>
+        </div>
+
+        <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-800/50 text-[11px] text-amber-200">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+            Amazon publishes no official Blink API. This uses an unofficial, reverse-engineered login and may break without warning if Blink changes their backend.
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(blinkMessage))
+        {
+            <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300">@blinkMessage</div>
+        }
+
+        @if (Model.BlinkConnected)
+        {
+            <form method="post" asp-action="BlinkDisconnect">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-semibold text-xs transition-colors">
+                    Disconnect Blink
+                </button>
+            </form>
+        }
+        else if (blinkNeedsPin)
+        {
+            <form method="post" asp-action="BlinkVerifyPin" class="flex items-end gap-2">
+                @Html.AntiForgeryToken()
+                <div class="flex-1">
+                    <label class="text-[10px] text-slate-500 font-mono uppercase">Verification Code</label>
+                    <input type="text" name="pin" required maxlength="10" placeholder="123456" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500" />
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-colors">
+                    Verify
+                </button>
+            </form>
+        }
+        else
+        {
+            <form method="post" asp-action="BlinkLogin" class="space-y-3">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="text-[10px] text-slate-500 font-mono uppercase">Blink / Amazon Email</label>
+                    <input type="email" name="email" required class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500" />
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-500 font-mono uppercase">Password</label>
+                    <input type="password" name="password" required class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500" />
+                </div>
+                <p class="text-[11px] text-slate-500">Sent directly to your own local server, never to a third party. Your password is not stored — only the resulting session token is kept.</p>
+                <button type="submit" class="w-full px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-colors">
+                    Log In to Blink
+                </button>
+            </form>
+        }
+    </div>
+</div>

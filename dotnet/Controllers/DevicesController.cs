@@ -66,4 +66,17 @@ public class DevicesController : Controller
         await _dbContext.SaveChangesAsync(ct);
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Forget(Guid id, CancellationToken ct)
+    {
+        var existing = await _dbContext.Devices.FindAsync(new object[] { id }, ct);
+        if (existing != null)
+        {
+            _dbContext.Devices.Remove(existing);
+            await _dbContext.SaveChangesAsync(ct);
+        }
+        return RedirectToAction(nameof(Index));
+    }
 }

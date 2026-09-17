@@ -221,6 +221,61 @@ public class NasStorageNode
     public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
 }
 
+[Table("EcobeeCredentials")]
+public class EcobeeCredential
+{
+    [Key]
+    public int Id { get; set; } = 1;
+
+    public string? AccessToken { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTime AccessTokenExpiresUtc { get; set; }
+
+    // Set while the PIN pairing flow is in progress (ecobee.com/consumerportal), cleared once tokens are issued.
+    public string? PendingAuthorizationCode { get; set; }
+    public string? PendingPin { get; set; }
+    public DateTime? PendingExpiresUtc { get; set; }
+
+    public bool IsConnected => !string.IsNullOrEmpty(RefreshToken);
+}
+
+[Table("BlinkCredentials")]
+public class BlinkCredential
+{
+    [Key]
+    public int Id { get; set; } = 1;
+
+    public string? AuthToken { get; set; }
+    public string? AccountId { get; set; }
+    public string? ClientId { get; set; }
+    public string? RegionTier { get; set; }
+
+    // Set while an email/password login is awaiting 2FA PIN verification.
+    public string? PendingVerificationLink { get; set; }
+
+    public bool IsConnected => !string.IsNullOrEmpty(AuthToken);
+}
+
+[Table("BlinkCameras")]
+public class BlinkCamera
+{
+    [Key]
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    [MaxLength(128)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string DeviceType { get; set; } = "camera"; // camera | sync_module | owl | doorbell
+
+    public bool IsOnline { get; set; }
+    public bool IsArmed { get; set; }
+    public int? BatteryPercent { get; set; }
+    public double? TemperatureCelsius { get; set; }
+    public DateTime? LastMotionUtc { get; set; }
+    public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
+}
+
 public class HomePulseDbContext : DbContext
 {
     public HomePulseDbContext(DbContextOptions<HomePulseDbContext> options) : base(options) { }
@@ -231,6 +286,9 @@ public class HomePulseDbContext : DbContext
     public DbSet<SystemAlert> Alerts => Set<SystemAlert>();
     public DbSet<SpeedTestRecord> SpeedTestRecords => Set<SpeedTestRecord>();
     public DbSet<NasStorageNode> NasNodes => Set<NasStorageNode>();
+    public DbSet<EcobeeCredential> EcobeeCredentials => Set<EcobeeCredential>();
+    public DbSet<BlinkCredential> BlinkCredentials => Set<BlinkCredential>();
+    public DbSet<BlinkCamera> BlinkCameras => Set<BlinkCamera>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

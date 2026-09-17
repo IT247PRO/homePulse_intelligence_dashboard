@@ -26,11 +26,14 @@ builder.Services.AddSingleton<IOUIVendorLookup, OUIVendorLookup>();
 builder.Services.AddScoped<IAlertDispatcherService, AlertDispatcherService>();
 builder.Services.AddScoped<IGoogleIntegrationService, GoogleIntegrationService>();
 builder.Services.AddSingleton<ISpeedTestService, SpeedTestService>();
+builder.Services.AddScoped<IEcobeeIntegrationService, EcobeeIntegrationService>();
+builder.Services.AddScoped<IBlinkIntegrationService, BlinkIntegrationService>();
 
 // 3. Hosted Background Services
 builder.Services.AddHostedService<NetworkScannerService>();
 builder.Services.AddHostedService<ServiceMonitorWorker>();
 builder.Services.AddHostedService<SpeedTestService>();
+builder.Services.AddHostedService<BlinkMonitorWorker>();
 
 // 4. SignalR Real-Time Engine
 builder.Services.AddSignalR(options =>
@@ -38,6 +41,9 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = true;
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+}).AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 
 // 5. Strict Google OAuth 2.0 & Cookie Authentication Setup

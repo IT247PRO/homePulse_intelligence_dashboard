@@ -60,8 +60,8 @@ public class ChatController : Controller
         object? embeddedData = null;
 
         var devices = await _dbContext.Devices.AsNoTracking().ToListAsync(ct);
-        var services = await _dbContext.MonitoredServices.AsNoTracking().ToListAsync(ct);
-        var nasNodes = await _dbContext.NasStorageNodes.AsNoTracking().ToListAsync(ct);
+        var services = await _dbContext.Services.AsNoTracking().ToListAsync(ct);
+        var nasNodes = await _dbContext.NasNodes.AsNoTracking().ToListAsync(ct);
         var alerts = await _dbContext.Alerts.AsNoTracking().Where(a => !a.IsResolved).ToListAsync(ct);
 
         if (query.Contains("health") || query.Contains("online") || query.Contains("status"))

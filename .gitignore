@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# .NET
+dotnet/bin/
+dotnet/obj/
+dotnet/*.db
+dotnet/*.db-shm
+dotnet/*.db-wal
+dotnet/appsettings.json
+dotnet/appsettings.*.json

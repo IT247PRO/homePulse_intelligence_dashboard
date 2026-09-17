@@ -143,7 +143,7 @@ public class GoogleIntegrationService : IGoogleIntegrationService
                 {
                     var msgDetailsReq = gmailService.Users.Messages.Get("me", m.Id);
                     msgDetailsReq.Format = UsersResource.MessagesResource.GetRequest.FormatEnum.Metadata;
-                    msgDetailsReq.MetadataHeaders = ["From", "Subject", "Date"];
+                    msgDetailsReq.MetadataHeaders = new Google.Apis.Util.Repeatable<string>(new[] { "From", "Subject", "Date" });
 
                     var details = await msgDetailsReq.ExecuteAsync(ct);
 

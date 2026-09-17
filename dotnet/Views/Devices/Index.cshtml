@@ -19,6 +19,14 @@
             <p class="text-xs text-slate-400 mt-1">
                 Multi-threaded ARP scan & IEEE OUI Vendor resolution via NetworkScannerService.cs
             </p>
+            <div id="scan-progress-wrap" class="hidden mt-2 w-64">
+                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                    <span id="scan-progress-text">Scanning...</span>
+                </div>
+                <div class="h-1 rounded-full bg-slate-800 overflow-hidden">
+                    <div id="scan-progress-bar" class="h-full bg-indigo-500 transition-all" style="width:0%"></div>
+                </div>
+            </div>
         </div>
 
         <form method="get" asp-action="Index" class="flex items-center gap-2 w-full md:w-auto">
@@ -44,7 +52,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         @foreach (var device in Model.Devices)
         {
-            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md space-y-4 hover:border-slate-700 transition-colors">
+            <div data-device-mac="@device.MacAddress" class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md space-y-4 hover:border-slate-700 transition-colors">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400">
@@ -58,14 +66,14 @@
                                     <i class="fa-solid fa-shield-check text-emerald-400" title="Whitelisted Device"></i>
                                 }
                             </div>
-                            <div class="text-[11px] font-mono text-slate-400 mt-0.5">@device.IpAddress</div>
+                            <div data-field="ip" class="text-[11px] font-mono text-slate-400 mt-0.5">@device.IpAddress</div>
                         </div>
                     </div>
 
                     <!-- Mini Latency Arc Gauge -->
                     <div class="flex flex-col items-center">
-                        <span class="w-2 h-2 rounded-full @(device.IsOnline ? "bg-emerald-500" : "bg-rose-500") mb-1"></span>
-                        <span class="font-mono font-bold text-xs text-white">@(device.IsOnline ? $"{device.PingLatencyMs}ms" : "Down")</span>
+                        <span data-field="status-dot" class="w-2 h-2 rounded-full @(device.IsOnline ? "bg-emerald-500" : "bg-rose-500") mb-1"></span>
+                        <span data-field="latency" class="font-mono font-bold text-xs text-white">@(device.IsOnline ? $"{device.PingLatencyMs}ms" : "Down")</span>
                     </div>
                 </div>
 
@@ -82,7 +90,68 @@
                         <span>Role:</span>
                         <span class="px-1.5 py-0.2 rounded bg-slate-800 text-indigo-300">@device.Category</span>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(device.Notes))
+                    {
+                        <div class="pt-1 text-slate-400 font-sans italic truncate">@device.Notes</div>
+                    }
                 </div>
+
+                <details class="pt-3 border-t border-slate-800 group">
+                    <summary class="text-[11px] font-mono text-indigo-400 cursor-pointer hover:text-indigo-300 select-none list-none flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Edit / Rename Device</span>
+                    </summary>
+
+                    <form method="post" asp-action="Update" class="mt-3 space-y-2.5 text-xs">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@device.Id" />
+
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-mono uppercase">Custom Name</label>
+                            <input type="text" name="CustomAlias" value="@device.CustomAlias" maxlength="128" class="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-mono uppercase">Category</label>
+                            <select name="Category" class="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                @foreach (var cat in Enum.GetValues<DeviceCategory>())
+                                {
+                                    <option value="@cat" selected="@(device.Category == cat)">@cat</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-mono uppercase">Notes</label>
+                            <textarea name="Notes" rows="2" class="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">@device.Notes</textarea>
+                        </div>
+
+                        <div class="flex items-center gap-4 pt-1">
+                            <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                                <input type="checkbox" name="IsWhitelisted" value="true" checked="@device.IsWhitelisted" class="rounded bg-slate-800 border-slate-700" />
+                                Whitelisted
+                            </label>
+                            <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                                <input type="checkbox" name="IsAlertMuted" value="true" checked="@device.IsAlertMuted" class="rounded bg-slate-800 border-slate-700" />
+                                Mute Alerts
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-2">
+                            <button type="submit" class="flex-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+
+                    <form method="post" asp-action="Forget" class="mt-2" onsubmit="return confirm('Remove @device.CustomAlias from inventory? It will reappear automatically if it responds to the next scan.');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@device.Id" />
+                        <button type="submit" class="w-full px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-semibold text-xs transition-colors">
+                            Forget Device
+                        </button>
+                    </form>
+                </details>
             </div>
         }
     </div>

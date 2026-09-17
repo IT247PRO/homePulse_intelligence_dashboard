@@ -75,9 +75,20 @@ public partial class NetworkScannerService : BackgroundService
     {
         _logger.LogInformation("Initiating local network discovery cycle...");
 
-        // 1. Gather configured or detected local subnets
-        var subnets = _configuration.GetSection("NetworkScanner:TargetSubnets").Get<string[]>()
-                      ?? ["192.168.1.0/24"];
+        // 1. Gather configured subnets plus every real, active local subnet on this host
+        var configuredSubnets = _configuration.GetSection("NetworkScanner:TargetSubnets").Get<string[]>()
+                                 ?? Array.Empty<string>();
+        var detectedSubnets = GetActiveLocalSubnets();
+        var subnets = configuredSubnets.Concat(detectedSubnets)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (subnets.Count == 0)
+        {
+            subnets = ["192.168.1.0/24"];
+        }
+
+        _logger.LogInformation("Target subnets for this cycle: {Subnets}", string.Join(", ", subnets));
 
         var pingTimeoutMs = _configuration.GetValue("NetworkScanner:PingTimeoutMs", 800);
         var concurrency = _configuration.GetValue("NetworkScanner:ConcurrentPingLimit", 32);
@@ -216,6 +227,7 @@ public partial class NetworkScannerService : BackgroundService
 
                 db.Devices.Add(newDevice);
                 await db.SaveChangesAsync(ct);
+                existingDevices[macAddress] = newDevice;
 
                 // Push to SignalR clients
                 await _hubContext.Clients.Group("DashboardSubscribers")
@@ -232,9 +244,9 @@ public partial class NetworkScannerService : BackgroundService
         }
 
         // Check for devices that transitioned to offline
-        var now = DateTime.UtcNow;
+        var staleThreshold = DateTime.UtcNow.AddMinutes(-3);
         var staleDevices = await db.Devices
-            .Where(d => d.IsOnline && (now - d.LastSeenUtc).TotalMinutes > 3)
+            .Where(d => d.IsOnline && d.LastSeenUtc < staleThreshold)
             .ToListAsync(ct);
 
         foreach (var stale in staleDevices)
@@ -423,7 +435,8 @@ public partial class NetworkScannerService : BackgroundService
         var h = hostname.ToLowerInvariant();
         var v = vendor.ToLowerInvariant();
 
-        if (ports.Contains(5000) || ports.Contains(5001) || v.Contains("synology") || h.Contains("nas") || h.Contains("truenas"))
+        if (ports.Contains(5000) || ports.Contains(5001) || v.Contains("synology") || v.Contains("western digital") ||
+            h.Contains("nas") || h.Contains("truenas") || h.Contains("mycloud") || h.Contains("mybook"))
             return DeviceCategory.Storage;
 
         if (ports.Contains(8443) || v.Contains("ubiquiti") || v.Contains("cisco") || h.Contains("router") || h.Contains("udm") || h.Contains("gateway"))
@@ -450,12 +463,61 @@ public partial class NetworkScannerService : BackgroundService
         return string.Join(":", hash.Take(6).Select(b => b.ToString("X2")));
     }
 
+    private static List<string> GetActiveLocalSubnets()
+    {
+        var subnets = new List<string>();
+
+        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            if (nic.OperationalStatus != OperationalStatus.Up) continue;
+            if (nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel) continue;
+
+            var label = $"{nic.Name} {nic.Description}".ToLowerInvariant();
+            if (label.Contains("virtual") || label.Contains("hyper-v") || label.Contains("vmware") ||
+                label.Contains("virtualbox") || label.Contains("wsl") || label.Contains("docker") ||
+                label.Contains("loopback") || label.Contains("bluetooth"))
+                continue;
+
+            var ipProps = nic.GetIPProperties();
+            if (ipProps.GatewayAddresses.Count == 0) continue; // not routed onto a real LAN
+
+            foreach (var ua in ipProps.UnicastAddresses)
+            {
+                if (ua.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+
+                var bytes = ua.Address.GetAddressBytes();
+                if (bytes[0] == 169 && bytes[1] == 254) continue; // APIPA (no real DHCP lease)
+                if (bytes[0] == 127) continue; // loopback
+
+                int prefixLength = ua.PrefixLength is > 0 and <= 32 ? ua.PrefixLength : 24;
+
+                if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+                uint ipNum = BitConverter.ToUInt32(bytes, 0);
+                uint maskNum = prefixLength == 0 ? 0 : uint.MaxValue << (32 - prefixLength);
+                uint network = ipNum & maskNum;
+
+                var networkBytes = BitConverter.GetBytes(network);
+                if (BitConverter.IsLittleEndian) Array.Reverse(networkBytes);
+
+                subnets.Add($"{new IPAddress(networkBytes)}/{prefixLength}");
+            }
+        }
+
+        return subnets.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     private static List<string> GenerateIpsFromCidr(string cidr)
     {
         var parts = cidr.Split('/');
         if (parts.Length != 2 || !IPAddress.TryParse(parts[0], out var baseIp) || !int.TryParse(parts[1], out var mask))
         {
             return ["192.168.1.1", "192.168.1.10", "192.168.1.15", "192.168.1.20", "192.168.1.50"];
+        }
+
+        if (mask == 32)
+        {
+            // Single host entry (e.g. a router on a different segment than any local NIC) - just probe it directly.
+            return [baseIp.ToString()];
         }
 
         var ipBytes = baseIp.GetAddressBytes();

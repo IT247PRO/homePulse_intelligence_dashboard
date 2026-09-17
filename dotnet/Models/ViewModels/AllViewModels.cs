@@ -1,4 +1,5 @@
 using HomePulse.Models;
+using HomePulse.Services;
 
 namespace HomePulse.Models.ViewModels;
 
@@ -9,11 +10,19 @@ public class DashboardViewModel
     public int OnlineDeviceCount { get; set; }
     public double AverageLatencyMs { get; set; }
     public SpeedTestRecord? LatestSpeedTest { get; set; }
+    public List<SpeedTestRecord> SpeedTestHistory { get; set; } = new();
     public List<NetworkDevice> CriticalDevices { get; set; } = new();
     public List<SystemAlert> ActiveAlerts { get; set; } = new();
     public List<MonitoredService> MonitoredServices { get; set; } = new();
     public List<NasStorageNode> NasNodes { get; set; } = new();
     public string UserEmail { get; set; } = string.Empty;
+    public bool GoogleAccountLinked { get; set; }
+    public List<GoogleCalendarEventSummary> CalendarEvents { get; set; } = new();
+    public GoogleMailHighlightsSummary? MailHighlights { get; set; }
+    public bool EcobeeConnected { get; set; }
+    public List<EcobeeThermostatSummary> Thermostats { get; set; } = new();
+    public bool BlinkConnected { get; set; }
+    public List<BlinkCamera> BlinkCameras { get; set; } = new();
 }
 
 public class DeviceListViewModel
@@ -49,4 +58,10 @@ public class AlertsViewModel
 public class ChatViewModel
 {
     public List<string> SuggestedPrompts { get; set; } = new();
+}
+
+public class IntegrationsViewModel
+{
+    public bool EcobeeConnected { get; set; }
+    public bool BlinkConnected { get; set; }
 }

@@ -19,7 +19,7 @@ public class StorageController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var nodes = await _dbContext.NasStorageNodes.AsNoTracking().ToListAsync(ct);
+        var nodes = await _dbContext.NasNodes.AsNoTracking().ToListAsync(ct);
         var model = new StorageViewModel
         {
             Nodes = nodes,

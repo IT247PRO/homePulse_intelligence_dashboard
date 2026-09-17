@@ -59,6 +59,9 @@
                     <a asp-controller="Alerts" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
                         <i class="fa-solid fa-bell mr-1.5 text-rose-400"></i>Alerts
                     </a>
+                    <a asp-controller="Integrations" asp-action="Index" class="px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-plug mr-1.5 text-amber-400"></i>Integrations
+                    </a>
                     <a asp-controller="Chat" asp-action="Index" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 transition-colors">
                         <i class="fa-solid fa-comment-dots mr-1.5 text-indigo-400"></i>Copilot Chat
                     </a>
@@ -66,21 +69,31 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-mono">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div id="signalr-status-badge" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-mono">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                     <span class="text-slate-400">SignalR:</span>
-                    <span class="text-emerald-400">Connected</span>
+                    <span class="text-amber-400">Connecting...</span>
                 </div>
 
+                @{
+                    var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
+                    var userInitial = userEmail.Length > 0 ? userEmail[0].ToString().ToUpperInvariant() : "?";
+                }
                 <div class="flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
                     <div class="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center justify-center font-bold">
-                        A
+                        @userInitial
                     </div>
-                    <span class="hidden lg:inline text-slate-300 font-mono">azhar.cs@gmail.com</span>
+                    <span class="hidden lg:inline text-slate-300 font-mono">@userEmail</span>
+                    <a href="/api/auth/logout" title="Log out" class="ml-1 w-7 h-7 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </a>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- Toast Notification Container (populated by wwwroot/js/dashboard.js on live SignalR events) -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-80 pointer-events-none"></div>
 
     <!-- Main Razor Content -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -91,6 +104,7 @@
         HomePulse Intelligence Dashboard &copy; @DateTime.UtcNow.Year • Built with ASP.NET Core 9.0 MVC, SignalR, and Razor Tag Helpers.
     </footer>
 
+    <script src="~/js/dashboard.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
